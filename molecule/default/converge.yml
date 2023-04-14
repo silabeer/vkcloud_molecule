@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: true
+  vars:
+    ansible_ssh_timeout: 60
+    timeout: 60
+- name: Run Full playbook
+  ansible.builtin.import_playbook: ../../site.yml

@@ -1,0 +1,9 @@
+---
+auth_url:
+username:
+password:
+project_id:
+user_domain_name:
+net_id:
+key_name:
+ssh_key_file: ~/.ssh/id_rsa

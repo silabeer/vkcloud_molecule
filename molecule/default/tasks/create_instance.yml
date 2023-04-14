@@ -1,0 +1,48 @@
+---
+- name: Include vars
+  ansible.builtin.include_vars: ../vars/vkcloud_vars.yml
+
+- name: Initialize instance facts
+  ansible.builtin.set_fact:
+    instance_created:
+      instances: []
+  when: instance_created is not defined
+
+- name: Create a new instance
+  openstack.cloud.server:
+    state: present
+    auth:
+      auth_url: "{{ auth_url }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      project_id: "{{ project_id }}"
+      user_domain_name: "{{ user_domain_name }}"
+    availability_zone: "{{ item.availability_zone }}"
+    name: "{{ item.name }}-{{ 50 | random | to_uuid }}"
+    image: "{{ item.image }}"
+    key_name: "{{ key_name }}"
+    timeout: 200
+    config_drive: true
+    region_name: RegionOne
+    flavor: "{{ item.flavor }}"
+    security_groups: "{{ item.security_group }}"
+    nics:
+      - net-id: "{{ net_id }}"
+    boot_from_volume: true
+    volume_size: "{{ item.volume_size }}"
+    terminate_volume: true
+    meta:
+      hostname: "{{ item.hostname }}"
+  register: instance
+
+- name: Update instance facts
+  ansible.builtin.set_fact:
+    instance_created:
+      changed: instance.changed | bool
+      instances: "{{ instance_created.instances + [instance] }}"
+
+- name: Wait for sshd to come up on {{ item.name }}
+  ansible.legacy.wait_for:
+    host: "{{ instance_created.instances[0].server.addresses['ext-net'][0].addr }}"
+    port: 22
+    timeout: 90

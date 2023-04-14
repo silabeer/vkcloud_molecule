@@ -1,0 +1,97 @@
+---
+- name: Install MySQL Software Repo
+  ansible.builtin.yum:
+    name: http://repo.mysql.com/mysql57-community-release-el7-10.noarch.rpm
+    state: present
+
+- name: Install MySQL Database
+  ansible.builtin.yum:
+    name: mysql-server
+    disable_gpg_check: true
+    state: present
+
+- name: Install MySQL-python
+  ansible.builtin.yum:
+    name: MySQL-python
+    state: present
+
+- name: Start & Enable MySQL Server to start on boot
+  ansible.builtin.service:
+    name: mysqld
+    state: started
+    enabled: yes
+
+- name: Grep mysql log
+  ansible.builtin.shell: |
+    set -o pipefail
+    grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'
+  register: result
+  changed_when: false
+
+- name: Set root password
+  ansible.builtin.set_fact:
+    mysql_root_pw: "{{ result.stdout }}"
+
+- name: Get stat from my.cnf
+  ansible.builtin.stat:
+    path: /root/.my.cnf
+  register: sym
+
+- name: Register master pass
+  ansible.builtin.set_fact:
+    mysql_root_pw: "{{ masterpassword }}"
+  when: sym.stat.exists == True
+
+- name: Install .my.cnf with credentials
+  ansible.builtin.template:
+    src: my.cnf.j2
+    dest: /root/.my.cnf
+    mode: 0400
+
+- name: Set the root password for MySQL Database
+  ansible.builtin.command: mysql -u root --connect-expired-password --execute="SET PASSWORD = PASSWORD('{{ masterpassword }}');"
+  changed_when: false
+
+- name: Register master pass
+  ansible.builtin.set_fact:
+    mysql_root_pw: "{{ masterpassword }}"
+
+- name: Install .my.cnf with credentials
+  ansible.builtin.template:
+    src: my.cnf.j2
+    dest: /root/.my.cnf
+    mode: 0400
+
+- name: Create the database for website
+  community.mysql.mysql_db:
+    name: "{{ dbname }}"
+    state: present
+
+- name: Create the Application user for the database
+  community.mysql.mysql_user:
+    name: "{{ dbuser }}"
+    password: "{{ upassword }}"
+    priv: '*.*:ALL'
+    host: '%'
+    state: present
+
+- name: Check if firewalld is installed
+  ansible.builtin.package_facts:
+    manager: "auto"
+
+- name: Allow trafic for mysql
+  ansible.posix.firewalld:
+    zone: public
+    port: "{{ item }}"
+    permanent: true
+    state: enabled
+  with_items:
+    - "{{ mysql_port }}/tcp"
+  when: "'firewalld' in ansible_facts.packages"
+
+- name: Reload Firewalld
+  ansible.builtin.systemd:
+    name: firewalld
+    state: reloaded
+  when: "'firewalld' in ansible_facts.packages"
+  changed_when: false

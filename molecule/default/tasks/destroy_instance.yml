@@ -1,0 +1,14 @@
+---
+- name: Include vars
+  ansible.builtin.include_vars: ../vars/vkcloud_vars.yml
+
+- name: Destroy an instance
+  openstack.cloud.server:
+    name: "{{ item.name }}"
+    auth:
+      auth_url: "{{ auth_url }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      project_id: "{{ project_id }}"
+      user_domain_name: "{{ user_domain_name }}"
+    state: absent

@@ -1,0 +1,37 @@
+---
+- name: Create
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  no_log: "{{ molecule_no_log }}"
+  tasks:
+    - name: Create instances
+      ansible.builtin.include_tasks: tasks/create_instance.yml
+      loop: "{{ molecule_yml.platforms }}"
+
+    - name: Populate instance config dict
+      ansible.builtin.set_fact:
+        instance_conf_dict: {
+          'address': "{{ item.server.addresses['ext-net'][0].addr }}",
+          'instance': "{{ item.server.metadata.hostname }}",
+          'name': "{{ item.server.name }}",
+          'user': "{{ molecule_yml.driver.options.ansible_connection_options.ansible_ssh_user }}",
+          'port': "22",
+          'identity_file': "{{ ssh_key_file }}",
+        }
+      with_items: "{{ instance_created.instances }}"
+      register: instance_config_dict
+      when: instance_created.changed
+
+    - name: Convert instance config dict to a list
+      ansible.builtin.set_fact:
+        instance_conf: "{{ instance_config_dict.results | map(attribute='ansible_facts.instance_conf_dict') | list }}"
+      when: instance_created.changed
+
+    - name: Dump instance config
+      ansible.builtin.copy:
+        content: "{{ instance_conf | to_yaml }}"
+        dest: "{{ molecule_instance_config }}"
+        mode: 0760
+      when: instance_created.changed
+

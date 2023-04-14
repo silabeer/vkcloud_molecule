@@ -1,0 +1,16 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: true
+  become: true
+  vars:
+    ansible_ssh_timeout: 60
+    timeout: 60
+  tasks:
+    - name: Prepare yum package
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - openssh-server
+        - net-tools

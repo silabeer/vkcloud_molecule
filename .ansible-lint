@@ -1,0 +1,7 @@
+skip_list:
+  - no-jinja-when
+  - literal-compare
+  - no-handler
+  - no-changed-when
+  - ignore_errors
+  - jinja[invalid]

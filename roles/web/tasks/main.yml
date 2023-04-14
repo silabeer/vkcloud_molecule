@@ -1,0 +1,39 @@
+---
+- name: Install httpd and php
+  ansible.builtin.yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+   - httpd
+   - php
+   - php-mysql
+
+- name: Start & Enable Apache Server to start on boot
+  ansible.builtin.service:
+    name: httpd
+    state: started
+    enabled: yes
+
+- name: "Check if firewalld is installed"
+  ansible.builtin.package_facts:
+    manager: "auto"
+
+- name: Allow trafic for web
+  ansible.posix.firewalld:
+    zone: public
+    port: "{{ item }}"
+    permanent: true
+    state: enabled
+  with_items:
+    - 80/tcp
+  when: "'firewalld' in ansible_facts.packages"
+
+- name: Reload Firewalld
+  ansible.builtin.systemd:
+    name: firewalld
+    state: reloaded
+  when: "'firewalld' in ansible_facts.packages"
+  changed_when: false
+
+- name: Include Copy file
+  ansible.builtin.import_tasks: "copy.yml"

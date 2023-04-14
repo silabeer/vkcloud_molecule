@@ -1,0 +1,25 @@
+---
+- name: Copy yum repo file
+  ansible.builtin.copy:
+    src: "files/{{ item }}"
+    dest: "/var/www/html/{{ item }}"
+    force: yes
+    mode: 0760
+  with_items:
+    - about.html
+    - index.html
+  changed_when: false
+
+- name: Creates the index.php file
+  ansible.builtin.template:
+    src: index.php.j2
+    dest: /var/www/html/index.php
+    mode: 0760
+
+- name: Change group on www folder
+  ansible.builtin.file:
+    dest: /var/www
+    owner: apache
+    group: apache
+    mode: 0760
+    recurse: yes

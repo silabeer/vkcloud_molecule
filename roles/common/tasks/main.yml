@@ -1,0 +1,11 @@
+---
+- name: Install firewalld
+  ansible.builtin.yum:
+    name: firewalld
+    state: present
+
+- name: Enable Firewall on all the hosts
+  ansible.builtin.service:
+    name: firewalld
+    state: started
+    enabled: yes

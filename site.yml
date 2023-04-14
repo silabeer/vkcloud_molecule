@@ -1,0 +1,21 @@
+---
+- name: Apply for common configuration to all the nodes
+  hosts: all
+  become: yes
+  remote_user: centos
+  roles:
+   - common
+
+- name: Deploy MySQL and configure databases
+  hosts: dbservers
+  become: yes
+  remote_user: centos
+  roles:
+   - db
+
+- name: Deploy Apache, PHP and configure website code
+  hosts: webservers
+  become: yes
+  remote_user: centos
+  roles:
+   - web

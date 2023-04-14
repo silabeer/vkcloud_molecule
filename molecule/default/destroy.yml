@@ -1,0 +1,35 @@
+---
+- name: Destroy
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  no_log: "{{ molecule_no_log }}"
+  vars:
+     instance_content: "{{ lookup('file', '{{ molecule_instance_config }}') }}"
+  tasks:
+    - name: Set VM for destroy
+      ansible.builtin.set_fact:
+        instance_content: "{{ lookup('file', '{{ molecule_instance_config }}') }}"
+      ignore_errors: true
+      register: ignore_errors_register
+
+    - name: Destroy instance
+      ansible.builtin.include_tasks: tasks/destroy_instance.yml
+      loop: "{{ instance_content | from_yaml }}"
+      ignore_errors: true
+      register: ignore_errors_register
+
+    - name: Populate instance config
+      ansible.builtin.set_fact:
+        instance_conf: {}
+
+    - name: Dump instance config
+      ansible.builtin.copy:
+        content: |
+          # Molecule managed
+
+          {{ instance_conf | to_json | from_json | to_yaml }}
+        dest: "{{ molecule_instance_config }}"
+        mode: 0600
+      when: server.changed | default(false) | bool
+      changed_when: false

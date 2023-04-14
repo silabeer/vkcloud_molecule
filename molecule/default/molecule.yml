@@ -1,0 +1,41 @@
+---
+dependency:
+  name: galaxy
+  enable: false
+driver:
+  name: delegated
+  options:
+    managed: True
+    ansible_connection_options:
+      ansible_connection: ssh
+      ansible_ssh_user: centos
+      ansible_ssh_common_args: '-o ConnectTimeout=30'
+lint: |
+ set -e
+ yamllint .
+ ansible-lint
+platforms:
+  - name: web01
+    hostname: web01
+    image: "CentOS-7.9-202107"
+    flavor: Basic-1-1-10
+    volume_size: 10
+    security_group: default,ssh
+    availability_zone: GZ1
+    groups:
+      - webservers
+  - name: db01
+    hostname: db01
+    image: "CentOS-7.9-202107"
+    flavor: Basic-1-1-10
+    volume_size: 10
+    security_group: default,ssh
+    availability_zone: GZ1
+    groups:
+      - dbservers
+provisioner:
+  name: ansible
+verifier:
+  name: testinfra
+  options:
+    sudo: true
